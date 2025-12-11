@@ -1,16 +1,16 @@
+// src/components/DrawingCanvas.tsx
+
 import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { MusicRecommendation } from '../types';
 import { audioService } from '../services/audioService';
 
-// 1. Define the interface for methods exposed to the parent
+// 1. 定义暴露给父组件的方法
 export interface CanvasHandle {
   getVisualData: () => string;
   clear: () => void;
 }
 
 interface DrawingCanvasProps {
-  // onExport is no longer strictly needed for auto-generation, 
-  // but we keep the type definition to prevent breaking App.tsx immediately.
   onExport?: (base64: string) => void; 
   isPlaying: boolean;
   recommendation?: MusicRecommendation | null;
@@ -22,7 +22,7 @@ type ToolType = 'pencil' | 'line' | 'rect' | 'circle' | 'eraser' | 'stamp';
 
 const STAMPS = ['★', '♥', '✿', '☁', '✂', '♪', '⚡', '☺', '☂', '☾'];
 
-// 2. Wrap the component in forwardRef
+// 2. 使用 forwardRef 包裹组件
 const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, isPlaying, recommendation, isAnalyzing, onPlayToggle }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,11 +44,11 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
 
   const PAPER_COLOR = '#Fdfdfd';
 
-  // 3. Expose the "getVisualData" method to the parent (App.tsx)
+  // 3. ✨ 关键：暴露 getVisualData 给 App.tsx 调用 ✨
   useImperativeHandle(ref, () => ({
     getVisualData: () => {
       if (canvasRef.current) {
-        // Return compressed JPEG to save API bandwidth
+        // 返回 JPEG 格式以减小 Base64 体积，加快 API 传输
         return canvasRef.current.toDataURL("image/jpeg", 0.7);
       }
       return "";
@@ -142,9 +142,8 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
       setHistory(newHistory);
       setHistoryStep(newHistory.length - 1);
       
-      // ❌ STOP AUTOMATIC EXPORT ❌
-      // We commented this out so it doesn't trigger AI on every stroke
-      // if (onExport) onExport(dataUrl); 
+      // ✅ 这里的自动 onExport() 已经被删除了
+      // 现在的逻辑是：只有点击 App.tsx 里的按钮，才会提取数据
     }
   };
 
@@ -154,7 +153,6 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
       const newStep = historyStep - 1;
       setHistoryStep(newStep);
       restoreCanvasState(history[newStep]);
-      // Note: We also stop calling onExport here
     }
   };
 
@@ -201,6 +199,7 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     if ('touches' in e) e.preventDefault();
+    if (isAnalyzing) return; // 禁止在分析时绘图
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -279,7 +278,7 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
     if (isDrawing.current) {
       isDrawing.current = false;
       saveToHistory();
-      // Auto export removed from here!
+      // 这里没有任何 API 调用了
     }
   };
 
@@ -320,13 +319,12 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
         {/* Loading Overlay */}
         {isAnalyzing && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#1a1a1a]/95 backdrop-blur-md transition-all duration-500 animate-in fade-in">
-                {/* ... Loading Spinner ... */}
+                {/* SVG Loader */}
                 <div className="relative w-48 h-48 md:w-64 md:h-64 mb-8">
-                   {/* ... Keep your existing SVG loader code here ... */}
-                   <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
-                        {/* Simplified for brevity - keep your original SVG content */}
-                        <circle cx="100" cy="100" r="95" fill="#333" stroke="#444" strokeWidth="2" />
-                        <text x="100" y="110" fill="white" textAnchor="middle">LOADING...</text>
+                   <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible animate-spin-slow">
+                        <circle cx="100" cy="100" r="95" fill="#111" stroke="#333" strokeWidth="2" />
+                        <circle cx="100" cy="100" r="30" fill="#F4D35E" />
+                        <text x="100" y="160" fill="white" fontSize="10" textAnchor="middle" letterSpacing="2">PROCESSING</text>
                    </svg>
                 </div>
                 <div className="flex flex-col items-center gap-3">
@@ -339,15 +337,17 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
         
         {/* TOP BAR */}
         <div className="relative z-10 w-full flex flex-col md:flex-row justify-between items-center mb-4 md:mb-8 pb-4 border-b border-white/20 gap-4">
-             {/* ... Keep your existing Top Bar code ... */}
+             {/* Title / Logo Area */}
+             <div className="flex items-center gap-4">
+                 <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+                 <span className="font-poster text-white/50 tracking-widest text-sm">REC MODE</span>
+             </div>
+
              <div className="flex gap-2 md:gap-3">
-                 <button onClick={handleUndo} className="px-3 py-1 text-xs md:text-sm font-poster text-white border border-white/30 hover:bg-white/10 uppercase tracking-wider">Undo</button>
-                 <button onClick={clearCanvas} className="px-3 py-1 text-xs md:text-sm font-poster text-white border border-white/30 hover:bg-red-500/20 hover:text-red-200 uppercase tracking-wider">Clear</button>
+                 <button onClick={handleUndo} className="px-3 py-1 text-xs md:text-sm font-poster text-white border border-white/30 hover:bg-white/10 uppercase tracking-wider transition-colors">Undo</button>
+                 <button onClick={clearCanvas} className="px-3 py-1 text-xs md:text-sm font-poster text-white border border-white/30 hover:bg-red-500/20 hover:text-red-200 uppercase tracking-wider transition-colors">Clear</button>
              </div>
         </div>
-
-        {/* TOOLBAR */}
-        {/* ... Keep your existing Toolbar code ... */}
 
         {/* WORKSPACE */}
         <div className="relative z-10 w-full max-w-[800px] md:aspect-[2/1] bg-transparent flex justify-center items-center py-2 md:py-4">
@@ -359,7 +359,7 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
                         ref={containerRef}
                         className="absolute inset-[4px] md:inset-[6px] bg-white shadow-md overflow-hidden group"
                       >
-                         <canvas
+                          <canvas
                             ref={canvasRef}
                             className="block w-full h-full cursor-crosshair touch-none"
                             style={{ touchAction: 'none' }}
@@ -383,7 +383,8 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
 
                 {/* CD PLAYER AREA */}
                 <div className="w-full md:w-1/2 h-[300px] md:h-full relative bg-[#1a1a1a] shrink-0 overflow-hidden">
-                      {/* ... Keep your existing CD Player Visuals ... */}
+                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at center, #333 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                      
                       <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-[240px] md:w-[85%] aspect-square rounded-full bg-black shadow-2xl relative flex items-center justify-center border-4 border-[#111]">
                              <div 
@@ -393,19 +394,21 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
                                     animation: isPlaying ? 'spin 4s linear infinite' : 'none'
                                 }}
                              >
-                                 {/* ... CD Visuals ... */}
+                                 <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,#222_180deg,transparent_360deg)] opacity-40"></div>
+                                 <div className="absolute inset-0 rounded-full border-[10px] border-[#151515]"></div>
+                                 
                                  {/* Center Label */}
                                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[38%] h-[38%] rounded-full bg-gradient-to-br from-[#F4D35E] to-[#C7B299] shadow-inner flex items-center justify-center z-10 border border-[#bfae82]">
-                                     {recommendation ? (
-                                        <div className="text-center transform rotate-0">
-                                            <p className="font-poster text-[6px] md:text-[8px] tracking-widest text-[#08303F] font-bold">HWAEUN RECORDS</p>
-                                            <div className="w-8 h-px bg-[#08303F] mx-auto my-0.5 opacity-50"></div>
-                                            <p className="font-serif text-[4px] md:text-[6px] text-[#08303F] max-w-[50px] leading-tight mx-auto truncate">{recommendation.suggestedTrack}</p>
-                                        </div>
-                                     ) : (
-                                        <span className="font-poster text-[8px] tracking-widest text-[#08303F]/50">NO DISC</span>
-                                     )}
-                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[12%] h-[12%] rounded-full bg-[#eee] shadow-inner border border-gray-400"></div>
+                                      {recommendation ? (
+                                         <div className="text-center transform rotate-0">
+                                             <p className="font-poster text-[6px] md:text-[8px] tracking-widest text-[#08303F] font-bold">HWAEUN RECORDS</p>
+                                             <div className="w-8 h-px bg-[#08303F] mx-auto my-0.5 opacity-50"></div>
+                                             <p className="font-serif text-[4px] md:text-[6px] text-[#08303F] max-w-[50px] leading-tight mx-auto truncate">{recommendation.suggestedTrack}</p>
+                                         </div>
+                                      ) : (
+                                         <span className="font-poster text-[8px] tracking-widest text-[#08303F]/50">NO DISC</span>
+                                      )}
+                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[12%] h-[12%] rounded-full bg-[#eee] shadow-inner border border-gray-400"></div>
                                  </div>
                              </div>
                           </div>
@@ -413,8 +416,8 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
                       
                       {/* Power Light */}
                       <div className="absolute bottom-4 left-4 flex gap-2">
-                         <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-red-500 shadow-[0_0_8px_red] animate-pulse' : 'bg-red-900'}`}></div>
-                         <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 shadow-[0_0_8px_green]' : 'bg-green-900'}`}></div>
+                          <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-red-500 shadow-[0_0_8px_red] animate-pulse' : 'bg-red-900'}`}></div>
+                          <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 shadow-[0_0_8px_green]' : 'bg-green-900'}`}></div>
                       </div>
                 </div>
 
@@ -422,11 +425,57 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
         </div>
 
         {/* PALETTE */}
-        {/* ... Keep your existing Palette code ... */}
+        <div className="relative z-10 flex flex-wrap justify-center gap-2 mt-4 max-w-2xl">
+             {/* Colors */}
+             <div className="flex gap-1 p-2 bg-white/10 rounded-full backdrop-blur-sm">
+                 {['#08303F', '#F4D35E', '#DA4167', '#06D6A0', '#118AB2', '#5C7081'].map(c => (
+                     <button 
+                       key={c}
+                       onClick={() => handleColorClick(c)}
+                       className={`w-6 h-6 md:w-8 md:h-8 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
+                       style={{ backgroundColor: c }}
+                     />
+                 ))}
+             </div>
+             
+             {/* Tools */}
+             <div className="flex gap-1 p-2 bg-white/10 rounded-full backdrop-blur-sm">
+                 {(['pencil', 'line', 'rect', 'circle', 'eraser'] as ToolType[]).map(t => (
+                    <button
+                        key={t}
+                        onClick={() => handleToolClick(t)}
+                        className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white transition-all ${tool === t ? 'bg-white text-[#08303F] scale-105' : 'hover:bg-white/20'}`}
+                    >
+                        {/* Simple Icons */}
+                        {t === 'pencil' && '✎'}
+                        {t === 'line' && '/'}
+                        {t === 'rect' && '□'}
+                        {t === 'circle' && '○'}
+                        {t === 'eraser' && '⌫'}
+                    </button>
+                 ))}
+             </div>
+
+              {/* Stamps */}
+              <div className="flex gap-1 p-2 bg-white/10 rounded-full backdrop-blur-sm">
+                 <button onClick={() => handleToolClick('stamp')} className={`px-3 py-1 text-white rounded-full ${tool === 'stamp' ? 'bg-white text-[#08303F]' : ''}`}>Stamp:</button>
+                 {STAMPS.slice(0, 5).map(s => (
+                    <button
+                        key={s}
+                        onClick={() => { handleStampSelect(s); handleToolClick('stamp'); }}
+                        className={`w-6 h-6 md:w-8 md:h-8 flex items-center justify-center text-white hover:scale-125 transition-transform ${selectedStamp === s && tool === 'stamp' ? 'text-[#F4D35E] scale-125' : ''}`}
+                    >
+                        {s}
+                    </button>
+                 ))}
+             </div>
+        </div>
 
       </div>
     </div>
   );
 });
+
+DrawingCanvas.displayName = 'DrawingCanvas';
 
 export default DrawingCanvas;
