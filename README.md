@@ -11,14 +11,14 @@ This is the source code for the Hwa-Eum interactive web experiment.
 1. **Install dependencies:**
    ```bash
    npm install
-Setup Environment:
+2. **Setup Environment:**
 
 Create a file named .env.local in the root directory.
 
 Add your API Key (refer to .env.example).
 
-Run the app:
+3.**Run the app:**
 
-Bash
+   ```Bash
 
 npm run dev
