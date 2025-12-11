@@ -17,7 +17,7 @@ Create a file named .env.local in the root directory.
 
 Add your API Key (refer to .env.example).
 
- 3.**Run the app:**
+ 3. **Run the app:**
 
    ```Bash
 
