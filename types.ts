@@ -15,6 +15,7 @@ export interface MusicRecommendation {
   suggestedTrack: string;
   reasoning: string;
   tempo: string;
+  visualText?: string;
 }
 
 export enum AppState {
