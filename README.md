@@ -13,12 +13,14 @@ This is the source code for the Hwa-Eum interactive web experiment.
    npm install
 Setup Environment:
 
-Create a file named .env.local in the root directory.
+2. **Create a file named .env.local in the root directory.**
 
-Add your API Key (refer to .env.example).
+Add your API Key .
 
-Run the app:
+```Bash
+GEMINI_API_KEY=
 
-Bash
+3. **Run the app:**
 
+```Bash
 npm run dev
