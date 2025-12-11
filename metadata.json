@@ -1,0 +1,7 @@
+{
+  "name": "Hwaeun ",
+  "description": "A synesthetic art platform where drawings transform into music recommendations with customizable soundscapes.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
