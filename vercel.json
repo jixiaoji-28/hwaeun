@@ -1,0 +1,53 @@
+# 1. 创建 vercel.json
+@"
+{
+  "version": 2,
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+        }
+      ]
+    }
+  ]
+}
+"@ | Out-File -FilePath vercel.json -Encoding UTF8
+
+# 2. 更新 api/gemini.js（使用上面的代码）
+
+# 3. 提交
+git add vercel.json api/gemini.js
+git commit -m "Fix CORS with vercel.json configuration"
+
+# 4. 清除 Vercel 缓存并重新部署
+vercel --prod --force
+
+Write-Host "`n⏳ 等待部署完成..." -ForegroundColor Yellow
+Start-Sleep -Seconds 30
+
+Write-Host "✅ 现在测试 CORS..." -ForegroundColor Green
+Write-Host "在浏览器 Console 运行以下代码测试：" -ForegroundColor Cyan
+Write-Host @"
+fetch('https://hwaeun-102o2dgdh-jias-projects-ed7703e5.vercel.app/api/gemini', {
+  method: 'OPTIONS'
+}).then(r => {
+  console.log('CORS Headers:');
+  console.log('Allow-Origin:', r.headers.get('access-control-allow-origin'));
+  console.log('Allow-Methods:', r.headers.get('access-control-allow-methods'));
+});
+"@ -ForegroundColor White

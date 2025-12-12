@@ -1,28 +1,15 @@
 // api/gemini.js
 export default async function handler(req, res) {
-  // ✨ CORS 配置 - 修复版
-  const allowedOrigins = [
-    'https://jixiaoji-28.github.io',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:4173'
-  ];
-  
-  const origin = req.headers.origin;
-  
-  // 如果 origin 在允许列表中，设置对应的 origin；否则允许所有
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    // ✨ 关键修复：允许所有来源（生产环境可以限制）
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Max-Age', '86400'); // 24小时缓存预检请求
+  // ✨ 最简单有效的 CORS 配置
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-  // 处理 OPTIONS 预检请求
+  // OPTIONS 预检
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -35,7 +22,7 @@ export default async function handler(req, res) {
     const API_KEY = process.env.GEMINI_API_KEY;
     
     if (!API_KEY) {
-      console.error('❌ GEMINI_API_KEY not found in environment variables');
+      console.error('❌ API key missing');
       return res.status(500).json({ error: 'API key not configured' });
     }
 
@@ -45,12 +32,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Image data required' });
     }
 
-    console.log('📡 Calling Gemini API with structured output...');
+    console.log('📡 Calling Gemini API...');
 
-    // 清理 base64 数据
     const cleanBase64 = imageBase64.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
 
-    // 使用 Gemini 2.0 Flash 的结构化输出
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`,
       {
@@ -70,33 +55,15 @@ export default async function handler(req, res) {
           }],
           generationConfig: {
             temperature: 0.8,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
             responseMimeType: "application/json",
             responseSchema: {
               type: "object",
               properties: {
-                mood: {
-                  type: "string",
-                  description: "The emotional mood of the drawing"
-                },
-                genre: {
-                  type: "string",
-                  description: "A suitable retro/vintage music genre"
-                },
-                suggestedTrack: {
-                  type: "string",
-                  description: "A creative, imaginary track title"
-                },
-                reasoning: {
-                  type: "string",
-                  description: "Why this music fits the drawing"
-                },
-                tempo: {
-                  type: "string",
-                  description: "Suggested tempo: Slow, Medium, or Fast"
-                }
+                mood: { type: "string" },
+                genre: { type: "string" },
+                suggestedTrack: { type: "string" },
+                reasoning: { type: "string" },
+                tempo: { type: "string" }
               },
               required: ["mood", "genre", "suggestedTrack", "reasoning", "tempo"]
             }
@@ -107,28 +74,22 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Gemini API error:', errorText);
-      return res.status(response.status).json({ 
-        error: 'Gemini API request failed',
-        details: errorText.substring(0, 200)
-      });
+      console.error('❌ Gemini error:', errorText);
+      return res.status(500).json({ error: 'Gemini API failed' });
     }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!text) {
-      console.error('❌ No text in Gemini response');
       return res.status(500).json({ error: 'No response from Gemini' });
     }
 
-    console.log('✅ Analysis complete!');
-    
-    // 返回结构化的 JSON
+    console.log('✅ Success!');
     return res.status(200).json({ result: text });
     
   } catch (error) {
-    console.error('❌ Server Error:', error);
+    console.error('❌ Error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
       message: error.message 
