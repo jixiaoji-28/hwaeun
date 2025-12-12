@@ -1,6 +1,6 @@
 // api/gemini.js
 export default async function handler(req, res) {
-  // CORS 配置
+  // ✨ CORS 配置 - 修复版
   const allowedOrigins = [
     'https://jixiaoji-28.github.io',
     'http://localhost:5173',
@@ -9,14 +9,20 @@ export default async function handler(req, res) {
   ];
   
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
+  
+  // 如果 origin 在允许列表中，设置对应的 origin；否则允许所有
+  if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // ✨ 关键修复：允许所有来源（生产环境可以限制）
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
   
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24小时缓存预检请求
 
-  // 预检请求
+  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
