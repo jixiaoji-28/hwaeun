@@ -33,7 +33,7 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
   const snapshot = useRef<ImageData | null>(null);
 
   // UI State
-  const [color, setColor] = useState('#08303F'); 
+  const [color, setColor] = useState('#000000'); 
   const [lineWidth, setLineWidth] = useState(3);
   const [tool, setTool] = useState<ToolType>('pencil');
   const [selectedStamp, setSelectedStamp] = useState(STAMPS[0]);
@@ -89,8 +89,9 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
         const ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.scale(dpr, dpr);
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+            // ✨ 像素风：方形笔触
+            ctx.lineCap = 'square';
+            ctx.lineJoin = 'miter';
             
             if (tempCanvas) {
                 ctx.drawImage(tempCanvas, 0, 0, rect.width, rect.height);
@@ -141,9 +142,6 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
       if (newHistory.length > 20) newHistory.shift();
       setHistory(newHistory);
       setHistoryStep(newHistory.length - 1);
-      
-      // ✅ 这里的自动 onExport() 已经被删除了
-      // 现在的逻辑是：只有点击 App.tsx 里的按钮，才会提取数据
     }
   };
 
@@ -180,15 +178,12 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     ctx.lineWidth = lineWidth;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    
+    // ✨ 像素风：方形笔触，无圆润效果
+    ctx.lineCap = 'square';
+    ctx.lineJoin = 'miter';
     ctx.shadowBlur = 0;
     ctx.globalCompositeOperation = 'source-over';
-    
-    if (tool === 'pencil' || tool === 'line' || tool === 'rect' || tool === 'circle') {
-       ctx.shadowColor = color;
-       ctx.shadowBlur = 0.5;
-    }
 
     if (tool === 'eraser') {
         ctx.strokeStyle = PAPER_COLOR;
@@ -278,7 +273,6 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
     if (isDrawing.current) {
       isDrawing.current = false;
       saveToHistory();
-      // 这里没有任何 API 调用了
     }
   };
 
@@ -424,27 +418,49 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
             </div>
         </div>
 
-        {/* PALETTE */}
-        <div className="relative z-10 flex flex-wrap justify-center gap-2 mt-4 max-w-2xl">
-             {/* Colors */}
-             <div className="flex gap-1 p-2 bg-white/10 rounded-full backdrop-blur-sm">
-                 {['#08303F', '#F4D35E', '#DA4167', '#06D6A0', '#118AB2', '#5C7081'].map(c => (
+        {/* PALETTE - 像素艺术调色板 */}
+        <div className="relative z-10 flex flex-wrap justify-center gap-2 mt-4 max-w-3xl">
+             {/* Colors - 更多颜色 */}
+             <div className="flex flex-wrap gap-1 p-2 bg-white/10 rounded-sm backdrop-blur-sm">
+                 {[
+                     '#000000', // 黑色
+                     '#FFFFFF', // 白色
+                     '#FF0000', // 红色
+                     '#00FF00', // 绿色
+                     '#0000FF', // 蓝色
+                     '#FFFF00', // 黄色
+                     '#FF00FF', // 品红
+                     '#00FFFF', // 青色
+                     '#FF6600', // 橙色
+                     '#9900FF', // 紫色
+                     '#00FF99', // 青绿
+                     '#FF0099', // 粉红
+                     '#663300', // 棕色
+                     '#999999', // 灰色
+                     '#FFB6C1', // 浅粉
+                     '#87CEEB', // 天蓝
+                     '#F4D35E', // 金黄
+                     '#DA4167', // 深红
+                     '#06D6A0', // 薄荷绿
+                     '#118AB2', // 深蓝
+                 ].map(c => (
                      <button 
                        key={c}
                        onClick={() => handleColorClick(c)}
-                       className={`w-6 h-6 md:w-8 md:h-8 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? 'border-white scale-110 shadow-lg' : 'border-transparent'}`}
+                       className={`w-6 h-6 md:w-7 md:h-7 border-2 transition-transform hover:scale-110 ${color === c ? 'border-white scale-110 shadow-lg' : 'border-gray-600/50'}`}
                        style={{ backgroundColor: c }}
+                       title={c}
                      />
                  ))}
              </div>
              
              {/* Tools */}
-             <div className="flex gap-1 p-2 bg-white/10 rounded-full backdrop-blur-sm">
+             <div className="flex gap-1 p-2 bg-white/10 rounded-sm backdrop-blur-sm">
                  {(['pencil', 'line', 'rect', 'circle', 'eraser'] as ToolType[]).map(t => (
                     <button
                         key={t}
                         onClick={() => handleToolClick(t)}
-                        className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white transition-all ${tool === t ? 'bg-white text-[#08303F] scale-105' : 'hover:bg-white/20'}`}
+                        className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center text-white transition-all ${tool === t ? 'bg-white text-[#08303F] scale-105' : 'hover:bg-white/20'}`}
                     >
                         {/* Simple Icons */}
                         {t === 'pencil' && '✎'}
@@ -457,8 +473,8 @@ const DrawingCanvas = forwardRef<CanvasHandle, DrawingCanvasProps>(({ onExport, 
              </div>
 
               {/* Stamps */}
-              <div className="flex gap-1 p-2 bg-white/10 rounded-full backdrop-blur-sm">
-                 <button onClick={() => handleToolClick('stamp')} className={`px-3 py-1 text-white rounded-full ${tool === 'stamp' ? 'bg-white text-[#08303F]' : ''}`}>Stamp:</button>
+              <div className="flex gap-1 p-2 bg-white/10 rounded-sm backdrop-blur-sm">
+                 <button onClick={() => handleToolClick('stamp')} className={`px-3 py-1 text-white ${tool === 'stamp' ? 'bg-white text-[#08303F]' : ''}`}>Stamp:</button>
                  {STAMPS.slice(0, 5).map(s => (
                     <button
                         key={s}
