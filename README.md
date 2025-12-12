@@ -17,6 +17,6 @@ This is the source code for the Hwa-Eum interactive web experiment.
 ```Bash
 GEMINI_API_KEY=
 
- 3. **Run the app:**
+3. **Run the app:**
 ```Bash
 npm run dev
