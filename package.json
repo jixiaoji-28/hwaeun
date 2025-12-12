@@ -12,7 +12,6 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

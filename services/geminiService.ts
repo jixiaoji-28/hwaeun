@@ -1,8 +1,8 @@
 // src/services/geminiService.ts
 import { MusicRecommendation } from "../types";
 
-// ✨ 使用 Vercel 后端 API（生产环境）
-const API_ENDPOINT = 'https://hwaeun-2iww6q2oe-jias-projects-ed7703e5.vercel.app/api/gemini';
+// 使用 Vercel 后端 API（生产环境）
+const API_ENDPOINT = 'https://hwaeun-102o2dgdh-jias-projects-ed7703e5.vercel.app/api/gemini';
 
 export const analyzeDrawing = async (base64Image: string): Promise<MusicRecommendation> => {
   try {
