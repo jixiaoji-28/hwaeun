@@ -1,4 +1,5 @@
-**Contribution**
+**Contribution**  
+
 Ji Jiaxian: UI,UX  
 Gyu Huh: functional algorithm part (drawing to music)  
 
