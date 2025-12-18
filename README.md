@@ -1,7 +1,7 @@
 **Contribution**  
 
-Ji Jiaxian: UI,UX  
-Gyu Huh: functional algorithm part (drawing to music)  
+**Ji Jiaxian:** UI,UX  
+**Gyu Huh:** functional algorithm part (drawing to music)  
 
 1. **Install dependencies:**
 ```bash
